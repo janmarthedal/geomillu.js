@@ -1,0 +1,27 @@
+fill properties
+  fill
+    value: <paint>
+    default: black
+  fill-rule
+    value: nonzero | evenodd | inherit
+    initial: nonzero
+  fill-opacity
+    value: <opacity-value> | inherit
+    initial: 1
+
+stroke properties
+  stroke
+    value: <paint>
+    initial: none
+  stroke-width
+    value: <percentage> | <length> | inherit
+    initial: 1
+  stroke-linecap
+    value: butt | round | square | inherit
+    initial: butt
+  stroke-linejoin
+    value: miter | round | bevel | inherit
+    initial: miter
+  stroke-miterlimit
+    value: <miterlimit> | inherit
+    initial: 4
