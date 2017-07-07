@@ -77,7 +77,7 @@ function boundingBox(...objs: GeomObject[]): Rectangle {
     return boundingBoxOfPoints([...p1s, ...p2s]);
 }
 
-/******** GeomIllu ********/
+/******** Illustration ********/
 
 class GeomObjectGroup extends GeomObject {
     elements: GeomObject[];
@@ -96,12 +96,23 @@ class GeomObjectGroup extends GeomObject {
 type length = number|string;
 
 interface DrawOptions {
-    strokeWidth?: length;
+    fill?: string;
+    stroke?: length;
+    'stroke-width'?: length;
 }
 
-class GeomIlluGroup {
+abstract class IllustrationWriter {
+    abstract begin(bbox: Rectangle): void;
+    abstract end(): void;
+    abstract beginGroup(attrs: DrawOptions): void;
+    abstract endGroup(): void;
+    abstract polygon(points: Point[], attrs: DrawOptions): void;
+    abstract toString(): string;
+}
+
+class IllustrationGroup {
     elements: {
-        element: GeomObject|GeomIlluGroup;
+        element: GeomObject|IllustrationGroup;
         attrs: DrawOptions;
     }[] = [];
     add(obj: GeomObject, options: DrawOptions): void {
@@ -110,8 +121,8 @@ class GeomIlluGroup {
             attrs: options
         });
     }
-    addGroup(attrs: DrawOptions={}): GeomIlluGroup {
-        const group = new GeomIlluGroup();
+    addGroup(attrs: DrawOptions={}): IllustrationGroup {
+        const group = new IllustrationGroup();
         this.elements.push({
             element: group,
             attrs: attrs
@@ -121,9 +132,9 @@ class GeomIlluGroup {
     boundingBox(): Rectangle {
         return boundingBox(...this.elements.map(e => e.element));
     }
-    drawGroup(writer: GeomIlluWriter): string {
+    drawGroup(writer: IllustrationWriter): string {
         return this.elements.map(({element, attrs}) => {
-            if (element instanceof GeomIlluGroup) {
+            if (element instanceof IllustrationGroup) {
                 writer.beginGroup(attrs);
                 element.drawGroup(writer);
                 writer.endGroup();
@@ -136,20 +147,11 @@ class GeomIlluGroup {
     }
 }
 
-abstract class GeomIlluWriter {
-    abstract begin(bbox: Rectangle): void;
-    abstract end(): void;
-    abstract beginGroup(attrs: DrawOptions): void;
-    abstract endGroup(): void;
-    abstract polygon(points: Point[], attrs: DrawOptions): void;
-    abstract toString(): string;
-}
-
-class GeomIllu extends GeomIlluGroup {
+class Illustration extends IllustrationGroup {
     constructor() {
         super();
     }
-    draw(writer: GeomIlluWriter): string {
+    draw(writer: IllustrationWriter): string {
         const bbox = this.boundingBox();
         writer.begin(bbox);
         this.drawGroup(writer);
@@ -158,15 +160,22 @@ class GeomIllu extends GeomIlluGroup {
     }
 }
 
-class GeomIlluSVGWriter extends GeomIlluWriter {
+class IllustrationSVGWriter extends IllustrationWriter {
     output: string = '';
     indent: string = '';
+    strokeDefaults: object = {
+        stroke: 'none',
+        strokeWidth: '1'
+    };
+    fillDefaults: object = {
+        fill: 'black'
+    };
     static toPath(points: Point[], close: boolean): string {
         const d = points.map((p, k) => (k === 0 ? 'M' : 'L') + p.x + ' ' + p.y).join('');
         return close ? d + 'Z' : d;
     }
     private beginTag(name: string, attrs: object, close: boolean): void {
-        this.output += this.indent + '<' + name + Object.keys(attrs).map(key => ` ${key}="${attrs[key]}"`) + (close ? '/' : '') + '>\n';
+        this.output += this.indent + '<' + name + Object.keys(attrs).map(key => ` ${key}="${attrs[key]}"`).join('') + (close ? '/' : '') + '>\n';
         if (!close) this.indent += '  ';
     }
     private endTag(name: string) {
@@ -174,12 +183,17 @@ class GeomIlluSVGWriter extends GeomIlluWriter {
         this.output += this.indent + '</' + name + '>\n';
     }
     begin(bbox: Rectangle): void {
+        const margin = 0.1;
+        const x = bbox.base.x - margin, y = bbox.base.y - margin,
+            w = bbox.size.x + 2*margin, h = bbox.size.y + 2*margin;
         this.beginTag('svg', {
             xmlns: 'http://www.w3.org/2000/svg',
-            viewBox: `${bbox.base.x} ${bbox.base.y} ${bbox.size.x} ${bbox.size.y}`
+            viewBox: `${x} ${y} ${w} ${h}`
         }, false);
+        this.beginTag('g', {transform: `matrix(1 0 0 -1 0 ${bbox.size.y})`}, false);
     }
     end(): void {
+        this.endTag('g');
         this.endTag('svg');
     }
     beginGroup(attrs: DrawOptions): void {
@@ -191,7 +205,7 @@ class GeomIlluSVGWriter extends GeomIlluWriter {
     polygon(points: Point[], attrs: DrawOptions): void {
         this.beginTag('path', {
             ...attrs, 
-            d: GeomIlluSVGWriter.toPath(points, true)
+            d: IllustrationSVGWriter.toPath(points, true)
         }, true);
     }
     toString(): string {
@@ -199,14 +213,14 @@ class GeomIlluSVGWriter extends GeomIlluWriter {
     }
 }
 
-const illu = new GeomIllu();
+const illu = new Illustration();
 
 const A = new Point(0, 0);
 const B = new Point(4, 0);
 const C = new Point(0, 3);
 
-illu.add(new Polygon(A, B, C), {strokeWidth: "0.1em"});
+illu.add(new Polygon(A, B, C), {stroke: 'black', 'stroke-width': '0.1', fill: 'none'});
 
-const writer = new GeomIlluSVGWriter();
+const writer = new IllustrationSVGWriter();
 illu.draw(writer);
 console.log(writer.toString());
