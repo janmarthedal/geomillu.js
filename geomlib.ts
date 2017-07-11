@@ -3,8 +3,8 @@ export abstract class GeomObject {
 }
 
 export class Point extends GeomObject {
-    x: number;
-    y: number;
+    readonly x: number;
+    readonly y: number;
     constructor(x: number, y: number) {
         super();
         this.x = x;
@@ -19,14 +19,14 @@ export class Point extends GeomObject {
     boundingBox(): Rectangle {
         return new Rectangle(this, Vector.zero);
     }
-    clone() : Point {
-        return new Point(this.x, this.y);
+    toString(): string {
+        return `${this.x} ${this.y}`;
     }
 }
 
 export class Vector {
-    x: number;
-    y: number;
+    readonly x: number;
+    readonly y: number;
     static zero = new Vector(0, 0);
     constructor(x: number, y: number) {
         this.x = x;
@@ -35,8 +35,8 @@ export class Vector {
 }
 
 export class Rectangle extends GeomObject {
-    base: Point;
-    size: Vector;
+    readonly base: Point;
+    readonly size: Vector;
     constructor(base: Point, size: Vector) {
         super();
         if (size.x < 0 || size.y < 0)
@@ -50,13 +50,52 @@ export class Rectangle extends GeomObject {
 }
 
 export class Polygon extends GeomObject {
-    points: Point[];
+    readonly points: Point[];
     constructor(...points: Point[]) {
         super();
-        this.points = points.map(p => p.clone());
+        this.points = [...points];
     }
     boundingBox(): Rectangle {
         return boundingBoxOfPoints(this.points);
+    }
+}
+
+export interface PathSegment {
+    command: string;
+    data: (number|Point)[];
+}
+
+export class PathElement extends GeomObject {
+    data: PathSegment[] = [];
+    addClose() {
+        this.data.push({command: 'Z', data: []});
+    }
+    addMoveTo(p: Point) {
+        this.data.push({command: 'M', data: [p]});
+    }
+    addLineTo(p: Point) {
+        this.data.push({command: 'L', data: [p]});
+    }
+    addHorizontalTo(x: number) {
+        this.data.push({command: 'H', data: [x]});
+    }
+    addVerticalTo(y: number) {
+        this.data.push({command: 'V', data: [y]});
+    }
+    addQuadraticTo(p1: Point, p: Point) {
+        this.data.push({command: 'Q', data: [p1, p]});        
+    }
+    addQuadraticToSmooth(p: Point) {
+        this.data.push({command: 'T', data: [p]});        
+    }
+    addCubicTo(p1: Point, p2: Point, p: Point) {
+        this.data.push({command: 'C', data: [p1, p2, p]});        
+    }
+    addCubicToSmooth(p2: Point, p: Point) {
+        this.data.push({command: 'S', data: [p2, p]});
+    }
+    boundingBox(): Rectangle {
+        throw new Error("Method not implemented.");
     }
 }
 

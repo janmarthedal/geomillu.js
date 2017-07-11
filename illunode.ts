@@ -1,4 +1,4 @@
-import {GeomObject} from './geomlib';
+import {GeomObject, Point, PathElement} from './geomlib';
 
 type length = number|string;
 
@@ -9,21 +9,20 @@ export interface DrawOptions {
 }
 
 export abstract class NodeWriter {
-    abstract begin(): void;
-    abstract end(): void;
     abstract beginAttr(attr: DrawOptions): void;
     abstract endAttr(): void;
     abstract beginTransform(a: number, b: number, c: number,
         d: number, e: number, f: number): void;
     abstract endTransform(): void;
+    abstract writePath(e: PathElement): void;
+}
+
+function numOrPointToString(v: number|Point): string {
+    return v instanceof Point ? `${v.x},${v.y}` : '' + v;
 }
 
 export class DebugNodeWriter extends NodeWriter {
     indent: string = '';
-    begin(): void {
-        this.indent = '';
-    }
-    end(): void {}
     beginAttr(attr: DrawOptions): void {
         console.log(this.indent + 'attr' + 
             Object.keys(attr).map(k => ` ${k}="${attr[k]}"`).join(''));
@@ -39,6 +38,11 @@ export class DebugNodeWriter extends NodeWriter {
     endTransform(): void {
         this.indent = this.indent.substr(2);
     }
+    writePath(e: PathElement): void {
+        console.log(this.indent + 'path ' +
+                    e.data.map(ps => ps.command +
+                                     ps.data.map(v => ' ' + numOrPointToString(v)).join('')).join('; '));
+    }
 }
 
 export abstract class Node {
@@ -53,6 +57,10 @@ class ObjectNode extends Node {
         this.obj = obj;
     }
     write(writer: NodeWriter): void {
+        if (this.obj instanceof PathElement)
+            writer.writePath(this.obj);
+        else
+            throw new Error('ObjectNode.write not implemented for object');
     }
 }
 

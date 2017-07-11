@@ -19,6 +19,7 @@
   "homepage": "https://github.com/janmarthedal/geomillu.js#readme",
   "dependencies": {
     "@types/jsdom": "^11.0.1",
+    "jsdom": "^11.1.0",
     "mathjax-node": "^1.1.0"
   }
 }
