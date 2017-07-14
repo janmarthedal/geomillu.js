@@ -1,25 +1,24 @@
-import {JSDOM} from 'jsdom';
-import {Point, PathElement} from './geomlib';
-import {AttrNode, TransformNode, Node, DebugNodeWriter} from './illunode';
+import {Point, PathElement, Matrix, Rectangle, Vector} from './geomlib';
+import {AttrNode, TransformNode, Node, Document, DrawOptions} from './illunode';
 
 
-function parseTransform(v: string, outNode: AttrNode|TransformNode): TransformNode {
+function parseTransform(v: string, outNode: Document|AttrNode|TransformNode): TransformNode {
     let match = v.match(/matrix\( *([-.0-9e]+) +([-.0-9e]+) +([-.0-9e]+) +([-.0-9e]+) +([-.0-9e]+) +([-.0-9e]+) *\)/);
     if (match) {
-        const tnode = new TransformNode(parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3]), parseFloat(match[4]), parseFloat(match[5]), parseFloat(match[6]));
+        const tnode = new TransformNode(new Matrix(parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3]), parseFloat(match[4]), parseFloat(match[5]), parseFloat(match[6])));
         outNode.add(tnode);
         return tnode;
     }
     match = v.match(/translate\( *([-.0-9e]+),([-.0-9e]+) *\)/);
     if (match) {
-        const tnode = new TransformNode(1, 0, 0, 1, parseFloat(match[1]), parseFloat(match[2]));
+        const tnode = new TransformNode(new Matrix(1, 0, 0, 1, parseFloat(match[1]), parseFloat(match[2])));
         outNode.add(tnode);
         return tnode;
     }
     match = v.match(/scale\( *([-.0-9e]+) *\)/);
     if (match) {
         const s = parseFloat(match[1]);
-        const tnode = new TransformNode(s, 0, 0, s, 0, 0);
+        const tnode = new TransformNode(new Matrix(s, 0, 0, s, 0, 0));
         outNode.add(tnode);
         return tnode;
     }
@@ -66,19 +65,33 @@ function parseSVGPath(d: string): PathElement {
     return node;
 }
 
-function parseSVGNode(node: Element, outNode: AttrNode|TransformNode) {
+function parseSVGNode(node: Element, outNode: Document|AttrNode|TransformNode) {
     let c = node.firstElementChild;
     while (c !== null) {
         let subNode = outNode;
+        const attr: DrawOptions = {};
         if (c.hasAttribute('transform')) {
             subNode = parseTransform(c.getAttribute('transform'), subNode);
+        }
+        ['font-family', 'stroke', 'stroke-width', 'fill'].forEach(key => {
+            if (c.hasAttribute(key))
+                attr[key] = c.getAttribute(key);
+        });
+        if (Object.keys(attr).length !== 0) {
+            const n = new AttrNode(attr);
+            subNode.add(n);
+            subNode = n;
         }
         switch (c.tagName.toLowerCase()) {
             case 'g':
                 parseSVGNode(c, subNode);
                 break;
             case 'path':
-                outNode.add(parseSVGPath(c.getAttribute('d')));
+                subNode.add(parseSVGPath(c.getAttribute('d')));
+                break;
+            case 'rect':
+                subNode.add(new Rectangle(new Point(parseFloat(c.getAttribute('x')), parseFloat(c.getAttribute('y'))),
+                                          new Vector(parseFloat(c.getAttribute('width')), parseFloat(c.getAttribute('height')))));
                 break;
             default:
                 console.log('Ignoring node ' + c.tagName);
@@ -87,28 +100,8 @@ function parseSVGNode(node: Element, outNode: AttrNode|TransformNode) {
     }
 }
 
-function parseSVG(root: Element) {
-    console.log('Input: ' + root.outerHTML);
-    if (root.tagName.toLowerCase() !== 'svg')
-        throw new Error('Not svg node');
-    const outRoot = new AttrNode();
+export function parseSVG(root: Element): Document {
+    const outRoot = new Document();
     parseSVGNode(root, outRoot);
     return outRoot;
 }
-
-(function() {
-    const dom = new JSDOM(`<svg viewBox="-0.3 -0.1 4.4 3.4" xmlns="http://www.w3.org/2000/svg">
-  <g font-family="arial">
-    <g stroke="black" stroke-width="0.04" fill="transparent">
-      <path d="M 0 3 L 4 3 L 0 0 Z" stroke-linejoin="round" />
-      <path d="M 0 2.8 L 0.2 2.8 L 0.2 3" stroke-linejoin="miter" />
-    </g>
-    <text x="-0.12" y="3.15" font-size="0.3" text-anchor="middle">A</text>
-  </g>
-</svg>`);
-    const root = dom.window.document.querySelector('svg');
-    console.log(root.outerHTML);
-    const node = parseSVG(root);
-    const writer = new DebugNodeWriter();
-    node.write(writer);
-})();

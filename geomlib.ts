@@ -24,6 +24,24 @@ export class Point extends GeomObject {
     }
 }
 
+export class Matrix {
+    /* [a c e]
+       [b d f]
+       [0 0 1] */
+    readonly a: number;
+    readonly b: number;
+    readonly c: number;
+    readonly d: number;
+    readonly e: number;
+    readonly f: number;
+    constructor(a: number, b: number, c: number, d: number, e: number, f: number) {
+        this.a = a;  this.b = b;  this.c = c;  this.d = d;  this.e = e;  this.f = f;
+    }
+    multiply(p: Point): Point {
+        return new Point(this.a * p.x + this.c * p.y + this.e, this.b * p.x + this.d * p.y + this.f);
+    }
+}
+
 export class Vector {
     readonly x: number;
     readonly y: number;
@@ -40,7 +58,7 @@ export class Rectangle extends GeomObject {
     constructor(base: Point, size: Vector) {
         super();
         if (size.x < 0 || size.y < 0)
-            throw new Error('Illegal rectangle size');
+            throw new Error(`Illegal rectangle size ${size.x} ${size.y}`);
         this.base = base;
         this.size = size;
     }
@@ -95,11 +113,32 @@ export class PathElement extends GeomObject {
         this.data.push({command: 'S', data: [p2, p]});
     }
     boundingBox(): Rectangle {
-        throw new Error("Method not implemented.");
+        const xs = [];
+        const ys = [];
+        this.data.forEach(s => {
+            switch (s.command) {
+                case 'Z':
+                    break;
+                case 'H':
+                    xs.push(s.data[0]);
+                    break;
+                case 'V':
+                    ys.push(s.data[0]);
+                    break;
+                default:
+                    const p = (<Point> s.data[s.data.length - 1]);
+                    xs.push(p.x);
+                    ys.push(p.y);
+                    break;
+            }
+        });
+        const p1 = new Point(Math.min(...xs), Math.min(...ys));
+        const p2 = new Point(Math.max(...xs), Math.max(...ys));
+        return new Rectangle(p1, p2.subtract(p1));
     }
 }
 
-function boundingBoxOfPoints(points: Point[]): Rectangle {
+export function boundingBoxOfPoints(points: Point[]): Rectangle {
     const xs = points.map(p => p.x);
     const ys = points.map(p => p.y);
     const p1 = new Point(Math.min(...xs), Math.min(...ys));
@@ -107,7 +146,7 @@ function boundingBoxOfPoints(points: Point[]): Rectangle {
     return new Rectangle(p1, p2.subtract(p1));
 }
 
-function boundingBox(...objs: GeomObject[]): Rectangle {
+export function boundingBox(...objs: GeomObject[]): Rectangle {
     const bbs = [...objs].map(o => o.boundingBox());
     const p1s = bbs.map(bb => bb.base);
     const p2s = bbs.map(bb => bb.base.plus(bb.size));

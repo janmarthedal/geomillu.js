@@ -7,7 +7,7 @@ mjAPI.config({
 });
 mjAPI.start();
 
-const math = 'x';
+const math = '\\frac{x}{y}';
 
 mjAPI.typeset({
     math: math,
