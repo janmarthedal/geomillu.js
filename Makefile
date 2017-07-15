@@ -1,9 +1,16 @@
-TARGETS = test-parse-svg.js parse-svg.js illunode.js geomlib.js svg-writer.js test.js mj-test.js tex-to-node.js
+OUTDIR := dst
+TARGETS = $(addprefix $(OUTDIR)/,test-parse-svg.js parse-svg.js illunode.js geomlib.js svg-writer.js test.js mj-test.js tex-to-node.js illustration.js)
 
 all: $(TARGETS)
 
-%.js: %.ts
-	tsc --lib es2015,dom $^
+$(OUTDIR)/%.js: %.ts
+	tsc --lib es2015,dom --outDir $(OUTDIR) --target ES5 $^
+
+$(TARGETS): | $(OUTDIR)
+
+$(OUTDIR):
+	mkdir $(OUTDIR)
 
 clean:
 	rm -f $(TARGETS)
+
