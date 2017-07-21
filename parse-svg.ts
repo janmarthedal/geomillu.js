@@ -2,25 +2,17 @@ import {Point, PathElement, Matrix, Rectangle, Vector} from './geomlib';
 import {AttrNode, TransformNode, Node, Document, DrawOptions} from './illunode';
 
 
-function parseTransform(v: string, outNode: Document|AttrNode|TransformNode): TransformNode {
+function parseTransform(v: string): TransformNode {
     let match = v.match(/matrix\( *([-.0-9e]+) +([-.0-9e]+) +([-.0-9e]+) +([-.0-9e]+) +([-.0-9e]+) +([-.0-9e]+) *\)/);
-    if (match) {
-        const tnode = new TransformNode(new Matrix(parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3]), parseFloat(match[4]), parseFloat(match[5]), parseFloat(match[6])));
-        outNode.add(tnode);
-        return tnode;
-    }
+    if (match)
+        return new TransformNode(new Matrix(parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3]), parseFloat(match[4]), parseFloat(match[5]), parseFloat(match[6])));
     match = v.match(/translate\( *([-.0-9e]+),([-.0-9e]+) *\)/);
-    if (match) {
-        const tnode = new TransformNode(new Matrix(1, 0, 0, 1, parseFloat(match[1]), parseFloat(match[2])));
-        outNode.add(tnode);
-        return tnode;
-    }
+    if (match)
+        return new TransformNode(new Matrix(1, 0, 0, 1, parseFloat(match[1]), parseFloat(match[2])));
     match = v.match(/scale\( *([-.0-9e]+) *\)/);
     if (match) {
         const s = parseFloat(match[1]);
-        const tnode = new TransformNode(new Matrix(s, 0, 0, s, 0, 0));
-        outNode.add(tnode);
-        return tnode;
+        return new TransformNode(new Matrix(s, 0, 0, s, 0, 0));
     }
     throw new Error(`Unsupported transform attribute "${v}"`);
 }
@@ -65,43 +57,51 @@ function parseSVGPath(d: string): PathElement {
     return node;
 }
 
-function parseSVGNode(node: Element, outNode: Document|AttrNode|TransformNode) {
-    let c = node.firstElementChild;
-    while (c !== null) {
-        let subNode = outNode;
-        const attr: DrawOptions = {};
-        if (c.hasAttribute('transform')) {
-            subNode = parseTransform(c.getAttribute('transform'), subNode);
-        }
-        ['font-family', 'stroke', 'stroke-width', 'fill'].forEach(key => {
-            if (c.hasAttribute(key))
-                attr[key] = c.getAttribute(key);
-        });
-        if (Object.keys(attr).length !== 0) {
-            const n = new AttrNode(attr);
-            subNode.add(n);
-            subNode = n;
-        }
-        switch (c.tagName.toLowerCase()) {
-            case 'g':
-                parseSVGNode(c, subNode);
-                break;
-            case 'path':
-                subNode.add(parseSVGPath(c.getAttribute('d')));
-                break;
-            case 'rect':
-                subNode.add(new Rectangle(new Point(parseFloat(c.getAttribute('x')), parseFloat(c.getAttribute('y'))),
-                                          new Vector(parseFloat(c.getAttribute('width')), parseFloat(c.getAttribute('height')))));
-                break;
-            default:
-                console.log('Ignoring node ' + c.tagName);
-        }
-        c = c.nextElementSibling;
-    }
+function addChildTo(node: Document|AttrNode|TransformNode, child: AttrNode|TransformNode) {
+    node.add(child);
+    return child;
 }
 
-export function parseSVG(root: Element): Document {
-    const outRoot = new Document();
-    parseSVGNode(root, outRoot);
-    return outRoot;
+export function parseSVG(node: Element): Document|AttrNode|TransformNode {
+    let outNode: Document|AttrNode|TransformNode;
+    let subNode: Document|AttrNode|TransformNode;
+    if (node.tagName.toLowerCase() === 'svg') {
+        outNode = subNode = new Document({});
+    } else {
+        const attr: DrawOptions = {};
+        outNode = subNode = new AttrNode();
+        if (node.hasAttribute('transform')) {
+            subNode = addChildTo(subNode, parseTransform(node.getAttribute('transform')));
+        }
+        ['font-family', 'stroke', 'stroke-width', 'fill'].forEach(key => {
+            if (node.hasAttribute(key))
+                attr[key] = node.getAttribute(key);
+        });
+        if (Object.keys(attr).length !== 0) {
+            subNode = addChildTo(subNode, new AttrNode(attr));
+        }
+        switch (node.tagName.toLowerCase()) {
+            case 'g':
+                break;
+            case 'path':
+                subNode.add(parseSVGPath(node.getAttribute('d')));
+                break;
+            case 'rect':
+                subNode.add(new Rectangle(new Point(parseFloat(node.getAttribute('x')), parseFloat(node.getAttribute('y'))),
+                                          new Vector(parseFloat(node.getAttribute('width')), parseFloat(node.getAttribute('height')))));
+                break;
+            default:
+                console.log('Ignoring node ' + node.tagName);
+                return undefined;
+        }
+        outNode = <Document|AttrNode|TransformNode> outNode.children[0];
+    }
+    let c = node.firstElementChild;
+    while (c !== null) {
+        const outChild = parseSVG(c);
+        if (outChild)
+            subNode.add(outChild)
+        c = c.nextElementSibling;
+    }
+    return outNode;
 }

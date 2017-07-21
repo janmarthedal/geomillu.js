@@ -1,8 +1,8 @@
-export abstract class GeomObject {
+export abstract class Element {
     abstract boundingBox(): Rectangle;
 }
 
-export class Point extends GeomObject {
+export class Point extends Element {
     readonly x: number;
     readonly y: number;
     constructor(x: number, y: number) {
@@ -52,7 +52,7 @@ export class Vector {
     }
 }
 
-export class Rectangle extends GeomObject {
+export class Rectangle extends Element {
     readonly base: Point;
     readonly size: Vector;
     constructor(base: Point, size: Vector) {
@@ -65,9 +65,12 @@ export class Rectangle extends GeomObject {
     boundingBox(): Rectangle {
         return this;
     }
+    expand(v: number): Rectangle {
+        return new Rectangle(new Point(this.base.x - v, this.base.y - v), new Vector(this.size.x + 2*v, this.size.y + 2*v));
+    }
 }
 
-export class Polygon extends GeomObject {
+export class Polygon extends Element {
     readonly points: Point[];
     constructor(...points: Point[]) {
         super();
@@ -83,7 +86,7 @@ export interface PathSegment {
     data: (number|Point)[];
 }
 
-export class PathElement extends GeomObject {
+export class PathElement extends Element {
     data: PathSegment[] = [];
     addClose() {
         this.data.push({command: 'Z', data: []});
@@ -146,7 +149,7 @@ export function boundingBoxOfPoints(points: Point[]): Rectangle {
     return new Rectangle(p1, p2.subtract(p1));
 }
 
-export function boundingBox(...objs: GeomObject[]): Rectangle {
+export function boundingBox(...objs: Element[]): Rectangle {
     const bbs = [...objs].map(o => o.boundingBox());
     const p1s = bbs.map(bb => bb.base);
     const p2s = bbs.map(bb => bb.base.plus(bb.size));

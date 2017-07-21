@@ -1,4 +1,4 @@
-import {GeomObject, Point, Vector, Matrix, PathElement, Rectangle, Polygon, boundingBox, boundingBoxOfPoints} from './geomlib';
+import {Element, Point, Vector, Matrix, PathElement, Rectangle, Polygon, boundingBox, boundingBoxOfPoints} from './geomlib';
 
 type length = number|string;
 
@@ -9,7 +9,7 @@ export interface DrawOptions {
 }
 
 export abstract class NodeWriter {
-    abstract begin(viewBox: Rectangle): void;
+    abstract begin(attr: object): void;
     abstract end(): void;
     abstract beginAttr(attr: DrawOptions): void;
     abstract endAttr(): void;
@@ -22,14 +22,6 @@ export abstract class NodeWriter {
 
 function numOrPointToString(v: number|Point): string {
     return v instanceof Point ? `${v.x},${v.y}` : '' + v;
-}
-
-function expandRectangle(r: Rectangle, v: number): Rectangle {
-    if (v < 0)
-        throw new Error('expandRectangle: Illegal value');
-    if (v === 0)
-        return r;
-    return new Rectangle(new Point(r.base.x - v, r.base.y - v), new Vector(r.size.x + 2*v, r.size.y + 2*v));
 }
 
 export class DebugNodeWriter extends NodeWriter {
@@ -75,8 +67,8 @@ export abstract class Node {
 }
 
 class ObjectNode extends Node {
-    private obj: GeomObject;
-    constructor(obj: GeomObject) {
+    private obj: Element;
+    constructor(obj: Element) {
         super();
         this.obj = obj;
     }
@@ -94,7 +86,7 @@ class ObjectNode extends Node {
         let bbox = this.obj.boundingBox();
         const width = typeof attr['stroke-width'] === 'string' ? parseFloat(<string> attr['stroke-width']) : <number> attr['stroke-width'];
         if (attr.stroke !== 'none' && width > 0)
-            bbox = expandRectangle(bbox, width/2);
+            bbox = bbox.expand(width/2);
         return bbox;
     }
 }
@@ -105,9 +97,9 @@ class InternalNode extends Node {
         super();
         this.children = [];
     }
-    add(...nodes: (Node|GeomObject)[]) {
+    add(...nodes: (Node|Element)[]) {
         nodes.forEach(node => {
-            this.children.push(node instanceof GeomObject ? new ObjectNode(node) : node);
+            this.children.push(node instanceof Element ? new ObjectNode(node) : node);
         });
     }
     write(writer: NodeWriter): void {
@@ -116,21 +108,6 @@ class InternalNode extends Node {
     getBBox(attr: DrawOptions): Rectangle {
         return boundingBox(...this.children.map(c => c.getBBox(attr)));
     }
-}
-
-export class Document extends InternalNode {
-    viewBox: Rectangle;
-    getBoundingBox(): Rectangle {
-        return this.getBBox({stroke: 'none', 'stroke-width': 1});
-    }
-    setViewBox(viewBox: Rectangle, margin: number=0) {
-        this.viewBox = expandRectangle(viewBox, margin);
-    }
-    write(writer: NodeWriter) {
-        writer.begin(this.viewBox);
-        super.write(writer);
-        writer.end();
-    }    
 }
 
 export class AttrNode extends InternalNode {
@@ -168,4 +145,20 @@ export class TransformNode extends InternalNode {
             b, new Point(b.x + s.x, b.y), new Point(b.x, b.y + s.y), new Point(b.x + s.x, b.y + s.y)
         ].map(p => this.m.multiply(p)));
     }
+}
+
+export class Document extends InternalNode {
+    readonly attr: object;
+    constructor(attr: object) {
+        super();
+        this.attr = attr;
+    }
+    getBoundingBox(): Rectangle {
+        return this.getBBox({stroke: 'none', 'stroke-width': 1});
+    }
+    write(writer: NodeWriter) {
+        writer.begin(this.attr);
+        super.write(writer);
+        writer.end();
+    }    
 }

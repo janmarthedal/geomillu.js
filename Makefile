@@ -1,5 +1,6 @@
 OUTDIR := dst
-TARGETS = $(addprefix $(OUTDIR)/,test-parse-svg.js parse-svg.js illunode.js geomlib.js svg-writer.js test.js mj-test.js tex-to-node.js illustration.js)
+TARGETS = $(addprefix $(OUTDIR)/,test-parse-svg.js parse-svg.js illunode.js geomlib.js \
+	svg-writer.js test.js mj-test.js tex-to-node.js illustration.js test-illustration.js)
 
 all: $(TARGETS)
 

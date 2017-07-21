@@ -36,10 +36,10 @@ export class SVGNodeWriter extends NodeWriter {
     private numOrPointToString(v: number|Point): string {
         return v instanceof Point ? this.numToString(v.x) + ',' + this.numToString(v.y) : this.numToString(v);
     }
-    begin(viewBox: Rectangle): void {
+    begin(attr: any) {
         const node = this.doc.createElementNS(SVGNS, 'svg');
-        if (viewBox)
-            node.setAttribute('viewBox', [viewBox.base.x, viewBox.base.y, viewBox.size.x, viewBox.size.y].map(v => this.numToString(v)).join(' '));
+        if (attr.viewBox)
+            node.setAttribute('viewBox', [attr.viewBox.base.x, attr.viewBox.base.y, attr.viewBox.size.x, attr.viewBox.size.y].map(v => this.numToString(v)).join(' '));
         node.setAttribute('xmlns', SVGNS);
         this.root = node;
         this.path.push(node);

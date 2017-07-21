@@ -1,5 +1,4 @@
 import * as mjAPI from 'mathjax-node';
-import {parseSVG} from './parse-svg';
 
 mjAPI.config({
     MathJax: {}
