@@ -1,4 +1,5 @@
-import {Element, Point, Vector, Matrix, PathElement, Rectangle, Polygon, boundingBox, boundingBoxOfPoints} from './geomlib';
+import {Element, Point, Vector, Matrix, PathElement, Rectangle, Line,
+    Polygon, boundingBox, boundingBoxOfPoints} from './geomlib';
 
 type length = number|string;
 
@@ -18,6 +19,7 @@ export abstract class NodeWriter {
     abstract writePath(e: PathElement): void;
     abstract writePolygon(e: Polygon): void;
     abstract writeRectangle(e: Rectangle): void;
+    abstract writeLine(e: Line): void;
 }
 
 function numOrPointToString(v: number|Point): string {
@@ -55,6 +57,9 @@ export class DebugNodeWriter extends NodeWriter {
     writePolygon(e: Polygon) {
         console.log(this.indent + 'polygon ' + e.points.map(p => numOrPointToString(p)).join(' '));
     }
+    writeLine(e: Line) {
+        console.log(this.indent + 'line ' + [e.p1, e.p2].map(p => numOrPointToString(p)).join(' '));
+    }
     writeRectangle(e: Rectangle) {
         console.log(`${this.indent}rect ${e.base.x} ${e.base.y} ${e.size.x} ${e.size.y}`);
     }
@@ -79,6 +84,8 @@ class ObjectNode extends Node {
             writer.writePolygon(this.obj);
         else if (this.obj instanceof Rectangle)
             writer.writeRectangle(this.obj)
+        else if (this.obj instanceof Line)
+            writer.writeLine(this.obj)            
         else
             throw new Error('ObjectNode.write not implemented for object');
     }

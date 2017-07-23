@@ -1,5 +1,5 @@
 import {JSDOM} from 'jsdom';
-import {Rectangle, Point, Matrix, PathElement, Polygon} from './geomlib';
+import {Rectangle, Point, Matrix, PathElement, Polygon, Line} from './geomlib';
 import {NodeWriter, DrawOptions} from './illunode';
 
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -85,6 +85,14 @@ export class SVGNodeWriter extends NodeWriter {
         node.setAttribute('y', this.numToString(e.base.y));
         node.setAttribute('width', this.numToString(e.size.x));
         node.setAttribute('height', this.numToString(e.size.y));
+        this.path[this.path.length - 1].appendChild(node);
+    }
+    writeLine(e: Line) {
+        const node = this.doc.createElementNS(SVGNS, 'line');
+        node.setAttribute('x1', this.numToString(e.p1.x));
+        node.setAttribute('y1', this.numToString(e.p1.y));
+        node.setAttribute('x2', this.numToString(e.p2.x));
+        node.setAttribute('y2', this.numToString(e.p2.y));
         this.path[this.path.length - 1].appendChild(node);
     }
 }

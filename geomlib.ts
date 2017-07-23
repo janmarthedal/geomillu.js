@@ -81,6 +81,19 @@ export class Polygon extends Element {
     }
 }
 
+export class Line extends Element {
+    readonly p1: Point;
+    readonly p2: Point;
+    constructor(p1: Point, p2: Point) {
+        super();
+        this.p1 = p1;
+        this.p2 = p2;
+    }
+    boundingBox(): Rectangle {
+        return boundingBoxOfPoints([this.p1, this.p2]);
+    }
+}
+
 export interface PathSegment {
     command: string;
     data: (number|Point)[];
@@ -114,6 +127,9 @@ export class PathElement extends Element {
     }
     addCubicToSmooth(p2: Point, p: Point) {
         this.data.push({command: 'S', data: [p2, p]});
+    }
+    isClosed() {
+        return this.data[this.data.length - 1].command === 'Z';
     }
     boundingBox(): Rectangle {
         const xs = [];

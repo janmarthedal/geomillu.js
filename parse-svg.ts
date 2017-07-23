@@ -66,7 +66,11 @@ export function parseSVG(node: Element): Document|AttrNode|TransformNode {
     let outNode: Document|AttrNode|TransformNode;
     let subNode: Document|AttrNode|TransformNode;
     if (node.tagName.toLowerCase() === 'svg') {
-        outNode = subNode = new Document({});
+        const attr = {};
+        Array.from(node.attributes).forEach(a => {
+            attr[a.name] = a.value;
+        });
+        outNode = subNode = new Document(attr);
     } else {
         const attr: DrawOptions = {};
         outNode = subNode = new AttrNode();
@@ -90,9 +94,11 @@ export function parseSVG(node: Element): Document|AttrNode|TransformNode {
                 subNode.add(new Rectangle(new Point(parseFloat(node.getAttribute('x')), parseFloat(node.getAttribute('y'))),
                                           new Vector(parseFloat(node.getAttribute('width')), parseFloat(node.getAttribute('height')))));
                 break;
-            default:
-                console.log('Ignoring node ' + node.tagName);
+            case 'title':
+                // Ignore
                 return undefined;
+            default:
+                throw new Error('Unsupported node ' + node.tagName);
         }
         outNode = <Document|AttrNode|TransformNode> outNode.children[0];
     }
