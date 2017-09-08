@@ -1,3 +1,4 @@
+TS = ./node_modules/typescript/bin/tsc
 OUTDIR := dst
 TARGETS = $(addprefix $(OUTDIR)/,test-parse-svg.js parse-svg.js illunode.js geomlib.js \
 	svg-writer.js test.js mj-test.js tex-to-node.js illustration.js test-illustration.js)
@@ -5,7 +6,7 @@ TARGETS = $(addprefix $(OUTDIR)/,test-parse-svg.js parse-svg.js illunode.js geom
 all: $(TARGETS)
 
 $(OUTDIR)/%.js: %.ts
-	tsc --lib es2015,dom --outDir $(OUTDIR) --target ES5 $^
+	$(TS) --lib es2015,dom --outDir $(OUTDIR) --target ES5 $^
 
 $(TARGETS): | $(OUTDIR)
 

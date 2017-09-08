@@ -12,7 +12,7 @@ illustration.setAttr({stroke: 'black', 'stroke-width': '0.001', fill: 'none'});
 //illustration.add(poly);
 illustration.add(new Line(new Point(-1, 0), new Point(1, 0)));
 illustration.add(new Line(new Point(0, -1), new Point(0, 1)));
-illustration.addText('Mx', A, 'NE')
+illustration.addText('Mx', A, 'SW')
     .then(() => {
         illustration.writeSVG(0.1);
     });

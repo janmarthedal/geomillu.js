@@ -1,4 +1,4 @@
-import {Element as giElement, Point, Matrix, Rectangle, PathElement} from './geomlib';
+import {Element as giElement, Point, Matrix, Rectangle, PathElement, Vector, Direction} from './geomlib';
 import {AttrNode, TransformNode, Document} from './illunode';
 import {TeXToNode} from './tex-to-node';
 import {SVGNodeWriter} from './svg-writer';
@@ -50,39 +50,48 @@ export class Illustration {
     }
 
     // Vertical: NMBS, horizontal: WME
-    addText(text: string, p: Point, anchor: string) {
+    addText(text: string, p: Point, anchor: string, offset?: number) {
         const fontSize = this.attrs['font-size'];
-        anchor = anchor || 'BW';
+        if (typeof offset === 'undefined')
+            offset = 0.5*fontSize;
         return TeXToNode(text, 'inline-TeX')
             .then((data: any) => {
-                let dx: number, dy: number;
+                let dx: number, dy: number, ofsx: number, ofsy: number;
                 switch (anchor[0]) {
                     case 'N':
                         dy = data.bounds.base.y + data.bounds.size.y;
+                        ofsy = -1;
                         break;
                     case 'M':
                         dy = data.bounds.base.y + data.bounds.size.y/2;
+                        ofsy = 0;
                         break;
                     case 'B':
                         dy = 0;
+                        ofsy = 0;
                         break;
                     case 'S':
                         dy = data.bounds.base.y;
+                        ofsy = 1;
                         break;
                 }
                 switch (anchor[1]) {
                     case 'W':
                         dx = data.bounds.base.x;
+                        ofsx = 1;
                         break;
                     case 'M':
                         dx = data.bounds.base.x + data.bounds.size.x/2;
+                        ofsx = 0;
                         break;
                     case 'E':
                         dx = data.bounds.base.x + data.bounds.size.x;
+                        ofsx = -1;
                         break;
                 }
+                const ofs = ofsx === 0 && ofsy === 0 ? Vector.zero : new Direction(new Vector(ofsx, ofsy)).scale(offset);
                 const tn = new TransformNode(
-                    new Matrix(fontSize, 0, 0, fontSize, p.x - dx, p.y - dy));
+                    new Matrix(fontSize, 0, 0, fontSize, p.x - dx + ofs.x, p.y - dy + ofs.y));
                 const an = new AttrNode(pick(this.attrs, Illustration.allAttrs));
                 tn.add(an);
                 an.add(data.node);

@@ -21,5 +21,8 @@
     "@types/jsdom": "^11.0.1",
     "jsdom": "^11.1.0",
     "mathjax-node": "^1.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^2.5.2"
   }
 }

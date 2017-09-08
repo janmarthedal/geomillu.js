@@ -52,6 +52,25 @@ export class Vector {
     }
 }
 
+export class Direction {
+    readonly x: number;
+    readonly y: number;
+    static rightAngle = 0.5*Math.PI;
+    constructor(v: number|Vector) {
+        if (v instanceof Vector) {
+            const length = Math.sqrt(v.x*v.x + v.y*v.y);
+            this.x = v.x/length;
+            this.y = v.y/length;
+        } else {
+            this.x = Math.cos(v);
+            this.y = Math.sin(v);
+        }
+    }
+    scale(s: number): Vector {
+        return new Vector(this.x * s, this.y * s);
+    }
+}
+
 export class Rectangle extends Element {
     readonly base: Point;
     readonly size: Vector;
