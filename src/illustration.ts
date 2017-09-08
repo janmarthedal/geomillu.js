@@ -14,10 +14,10 @@ function pick(obj: {[key: string]: any}, keys: string[]): {[key: string]: any} {
 
 export class Illustration {
     static defaultAttrs = {
-        stroke: 'black',
+        stroke: 'none',
         'stroke-width': '1',
-        fill: 'none',
-        'stroke-linejoin': 'round',
+        fill: 'black',
+        'stroke-linejoin': 'miter',
         'font-size': 1
     };
     static strokeAttrs = ['stroke', 'stroke-width', 'stroke-linejoin'];
@@ -51,7 +51,7 @@ export class Illustration {
     addText(text: string, p: Point, anchor: string, offset?: number) {
         const fontSize = this.attrs['font-size'];
         if (typeof offset === 'undefined')
-            offset = 0.1;
+            offset = 0.2*fontSize;
         return TeXToNode(text, 'inline-TeX')
             .then((data: any) => {
                 let dx: number, dy: number, ofsx: number, ofsy: number;
@@ -89,7 +89,7 @@ export class Illustration {
                 }
                 const ofs = ofsx === 0 && ofsy === 0 ? Vector.zero : new Direction(new Vector(ofsx, ofsy)).scale(offset);
                 const tn = new TransformNode(
-                    new Matrix(fontSize, 0, 0, fontSize, p.x + (ofs.x - dx) * fontSize, p.y + (ofs.y - dy) * fontSize)
+                    new Matrix(fontSize, 0, 0, fontSize, p.x - dx * fontSize + ofs.x, p.y - dy * fontSize + ofs.y)
                 );
                 const an = new AttrNode(pick(this.attrs, Illustration.allAttrs));
                 tn.add(an);
