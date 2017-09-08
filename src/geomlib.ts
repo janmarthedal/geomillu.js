@@ -1,5 +1,8 @@
 export abstract class Element {
     abstract boundingBox(): Rectangle;
+    hasInner(): boolean {
+        return false;
+    }
 }
 
 export class Point extends Element {
@@ -87,6 +90,9 @@ export class Rectangle extends Element {
     expand(v: number): Rectangle {
         return new Rectangle(new Point(this.base.x - v, this.base.y - v), new Vector(this.size.x + 2*v, this.size.y + 2*v));
     }
+    hasInner() {
+        return true;
+    }
 }
 
 export class Polygon extends Element {
@@ -97,6 +103,9 @@ export class Polygon extends Element {
     }
     boundingBox(): Rectangle {
         return boundingBoxOfPoints(this.points);
+    }
+    hasInner() {
+        return true;
     }
 }
 
@@ -173,6 +182,9 @@ export class PathElement extends Element {
         const p1 = new Point(Math.min(...xs), Math.min(...ys));
         const p2 = new Point(Math.max(...xs), Math.max(...ys));
         return new Rectangle(p1, p2.subtract(p1));
+    }
+    hasInner() {
+        return this.isClosed();
     }
 }
 

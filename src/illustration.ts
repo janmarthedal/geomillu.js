@@ -41,9 +41,7 @@ export class Illustration {
     */
     add(element: giElement) {
         // TODO: What to do about Point?
-        const attrPicker = (element instanceof Rectangle || 
-            (element instanceof PathElement && element.isClosed))
-            ? Illustration.allAttrs : Illustration.strokeAttrs;        
+        const attrPicker = element.hasInner() ? Illustration.allAttrs : Illustration.strokeAttrs;
         const n = new AttrNode(pick(this.attrs, attrPicker));
         n.add(element);
         this.nodes.push(n);
@@ -53,7 +51,7 @@ export class Illustration {
     addText(text: string, p: Point, anchor: string, offset?: number) {
         const fontSize = this.attrs['font-size'];
         if (typeof offset === 'undefined')
-            offset = 0.5*fontSize;
+            offset = 0.1;
         return TeXToNode(text, 'inline-TeX')
             .then((data: any) => {
                 let dx: number, dy: number, ofsx: number, ofsy: number;
@@ -91,7 +89,8 @@ export class Illustration {
                 }
                 const ofs = ofsx === 0 && ofsy === 0 ? Vector.zero : new Direction(new Vector(ofsx, ofsy)).scale(offset);
                 const tn = new TransformNode(
-                    new Matrix(fontSize, 0, 0, fontSize, p.x - dx + ofs.x, p.y - dy + ofs.y));
+                    new Matrix(fontSize, 0, 0, fontSize, p.x + (ofs.x - dx) * fontSize, p.y + (ofs.y - dy) * fontSize)
+                );
                 const an = new AttrNode(pick(this.attrs, Illustration.allAttrs));
                 tn.add(an);
                 an.add(data.node);
