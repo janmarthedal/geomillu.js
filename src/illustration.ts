@@ -20,7 +20,7 @@ export class Illustration {
         'stroke-linejoin': 'miter',
         'font-size': 1
     };
-    static strokeAttrs = ['stroke', 'stroke-width', 'stroke-linejoin'];
+    static strokeAttrs = ['stroke', 'stroke-width', 'stroke-linejoin', 'stroke-miterlimit'];
     static allAttrs = Illustration.strokeAttrs.concat(['fill']);
     private attrs: object = Illustration.defaultAttrs;
     private readonly nodes: (AttrNode|TransformNode)[];
