@@ -10,6 +10,9 @@ const illustration = new Illustration();
 
 illustration.setAttr({stroke: 'black', 'stroke-width': '0.04', fill: 'none', 'font-size': 0.25});
 illustration.add(poly);
+illustration.addAngle(B, A, C);
+illustration.addAngle(C, B, A);
+illustration.addAngle(A, C, B);
 illustration.addText('A', A, 'NE')
     .then(() => illustration.addText('A', A, 'NE'))
     .then(() => illustration.addText('B', B, 'NW'))

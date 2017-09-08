@@ -88,14 +88,30 @@ export class Illustration {
                         break;
                 }
                 const ofs = ofsx === 0 && ofsy === 0 ? Vector.zero : new Direction(new Vector(ofsx, ofsy)).scale(offset);
-                const tn = new TransformNode(
-                    new Matrix(fontSize, 0, 0, fontSize, p.x - dx * fontSize + ofs.x, p.y - dy * fontSize + ofs.y)
-                );
-                const an = new AttrNode(pick(this.attrs, Illustration.allAttrs));
-                tn.add(an);
-                an.add(data.node);
-                this.nodes.push(tn);
+                this.nodes.push(new TransformNode(
+                    new Matrix(fontSize, 0, 0, fontSize, p.x - dx * fontSize + ofs.x, p.y - dy * fontSize + ofs.y),
+                    new AttrNode(pick(this.attrs, Illustration.allAttrs), data.node)
+                ));
             });
+    }
+
+    addAngle(a: Point, b: Point, c: Point, radius?: number) {
+        const pe = new PathElement();
+        const dir1 = new Direction(a.subtract(b));
+        const dir2 = new Direction(c.subtract(b));
+        if (typeof radius !== 'number')
+            radius = this.attrs['font-size'];
+        const sinus = Math.sin(dir2.getAngle() - dir1.getAngle());
+        const v1 = dir1.scale(radius);
+        const v2 = dir2.scale(radius);
+        pe.addMoveTo(b.plus(v1));
+        if (1-sinus < 1e-8) {
+            pe.addLineTo(b.plus(v1).plus(v2));
+            pe.addLineTo(b.plus(v2));
+        } else {
+            pe.addArc(radius, radius, 0, sinus < 0, true, b.plus(v2));
+        }
+        this.nodes.push(new AttrNode({...pick(this.attrs, Illustration.strokeAttrs), fill: 'none'}, pe));
     }
 
     writeSVG(margin: number) {

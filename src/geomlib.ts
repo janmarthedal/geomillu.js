@@ -58,7 +58,6 @@ export class Vector {
 export class Direction {
     readonly x: number;
     readonly y: number;
-    static rightAngle = 0.5*Math.PI;
     constructor(v: number|Vector) {
         if (v instanceof Vector) {
             const length = Math.sqrt(v.x*v.x + v.y*v.y);
@@ -71,6 +70,9 @@ export class Direction {
     }
     scale(s: number): Vector {
         return new Vector(this.x * s, this.y * s);
+    }
+    getAngle() {
+        return Math.atan2(this.y, this.x);
     }
 }
 
@@ -156,6 +158,9 @@ export class PathElement extends Element {
     addCubicToSmooth(p2: Point, p: Point) {
         this.data.push({command: 'S', data: [p2, p]});
     }
+    addArc(rx: number, ry: number, angle: number, largeArc: boolean, sweep: boolean, p: Point) {
+        this.data.push({command: 'A', data: [rx, ry, angle, largeArc ? 1 : 0, sweep ? 1 : 0, p]});
+    }
     isClosed() {
         return this.data[this.data.length - 1].command === 'Z';
     }
@@ -173,7 +178,7 @@ export class PathElement extends Element {
                     ys.push(s.data[0]);
                     break;
                 default:
-                    const p = (<Point> s.data[s.data.length - 1]);
+                    const p = s.data[s.data.length - 1] as Point;
                     xs.push(p.x);
                     ys.push(p.y);
                     break;
@@ -184,7 +189,7 @@ export class PathElement extends Element {
         return new Rectangle(p1, p2.subtract(p1));
     }
     hasInner() {
-        return this.isClosed();
+        return true;
     }
 }
 

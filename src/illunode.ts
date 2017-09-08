@@ -119,9 +119,10 @@ class InternalNode extends Node {
 
 export class AttrNode extends InternalNode {
     readonly attr: DrawOptions;
-    constructor(attr: DrawOptions = {}) {
+    constructor(attr: DrawOptions = {}, ...nodes: (Node|Element)[]) {
         super();
         this.attr = attr;
+        this.add(...nodes);
     }
     write(writer: NodeWriter): void {
         writer.beginAttr(this.attr);
@@ -135,9 +136,10 @@ export class AttrNode extends InternalNode {
 
 export class TransformNode extends InternalNode {
     readonly m: Matrix;
-    constructor(m: Matrix) {
+    constructor(m: Matrix, ...nodes: (Node|Element)[]) {
         super();
         this.m = m;
+        this.add(...nodes);
     }
     write(writer: NodeWriter): void {
         writer.beginTransform(this.m);
