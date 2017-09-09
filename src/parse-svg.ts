@@ -78,7 +78,7 @@ export function parseSVG(node: Element): Document|GroupNode {
             subNode = addChildTo(subNode, parseTransform(node.getAttribute('transform')));
         }
         ['font-family', 'stroke', 'stroke-width', 'fill'].forEach(key => {
-            if (node.hasAttribute(key))
+            if (node.hasAttribute(key) && node.getAttribute(key) !== 'currentColor')
                 attr[key] = node.getAttribute(key);
         });
         if (Object.keys(attr).length !== 0) {
