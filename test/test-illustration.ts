@@ -1,5 +1,5 @@
-import {Point, Polygon, Line} from './src/geomlib';
-import {Illustration} from './src/illustration';
+import {Point, Polygon, Line} from '../src/geomlib';
+import {Illustration} from '../src/illustration';
 
 const A = new Point(0, 0);
 const B = new Point(4, 0);
