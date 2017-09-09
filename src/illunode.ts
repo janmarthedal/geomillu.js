@@ -12,10 +12,8 @@ export interface DrawOptions {
 export abstract class NodeWriter {
     abstract begin(attr: object): void;
     abstract end(): void;
-    abstract beginAttr(attr: DrawOptions): void;
-    abstract endAttr(): void;
-    abstract beginTransform(m: Matrix): void;
-    abstract endTransform(): void;
+    abstract beginGroup(attr: DrawOptions, m: Matrix): void;
+    abstract endGroup(): void;
     abstract writePath(e: PathElement): void;
     abstract writePolygon(e: Polygon): void;
     abstract writeRectangle(e: Rectangle): void;
@@ -35,18 +33,12 @@ export class DebugNodeWriter extends NodeWriter {
     end() {
         this.indent = this.indent.substr(2);
     }
-    beginAttr(attr: DrawOptions) {
-        console.log(this.indent + 'attr' + Object.keys(attr).map(k => ` ${k}="${attr[k]}"`).join(''));
+    beginGroup(attr: DrawOptions, m: Matrix) {
+        console.log(this.indent + 'attr' + Object.keys(attr).map(k => ` ${k}="${attr[k]}"`).join('')
+            + ` transform ${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f}`);
         this.indent += '  ';
     }
-    endAttr() {
-        this.indent = this.indent.substr(2);
-    }
-    beginTransform(m: Matrix) {
-        console.log(this.indent + `transform ${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f}`);
-        this.indent += '  ';
-    }
-    endTransform() {
+    endGroup() {
         this.indent = this.indent.substr(2);
     }
     writePath(e: PathElement) {
@@ -98,8 +90,7 @@ class ObjectNode extends Node {
     }
 }
 
-class InternalNode extends Node {
-    children: Node[];
+/*class InternalNode extends Node {
     constructor() {
         super();
         this.children = [];
@@ -115,27 +106,40 @@ class InternalNode extends Node {
     getBBox(attr: DrawOptions): Rectangle {
         return boundingBox(...this.children.map(c => c.getBBox(attr)));
     }
-}
+}*/
 
-export class AttrNode extends InternalNode {
+export class GroupNode extends Node {
     readonly attr: DrawOptions;
-    constructor(attr: DrawOptions = {}, ...nodes: (Node|Element)[]) {
+    readonly m: Matrix;
+    readonly children: Node[] = [];
+    constructor(attr: DrawOptions = {}, m: Matrix = Matrix.identity, ...nodes: (Node|Element)[]) {
         super();
         this.attr = attr;
+        this.m = m;
         this.add(...nodes);
     }
+    add(...nodes: (Node|Element)[]) {
+        nodes.forEach(node => {
+            this.children.push(node instanceof Element ? new ObjectNode(node) : node);
+        });
+    }
     write(writer: NodeWriter): void {
-        writer.beginAttr(this.attr);
-        super.write(writer);
-        writer.endAttr();
+        writer.beginGroup(this.attr, this.m);
+        this.children.forEach(c => c.write(writer));
+        writer.endGroup();
     }
     getBBox(attr: DrawOptions): Rectangle {
-        return super.getBBox({...attr, ...this.attr});
+        const a = {...attr, ...this.attr};
+        const bbox = boundingBox(...this.children.map(c => c.getBBox(a)));
+        const b = bbox.base;
+        const s = bbox.size;
+        return boundingBoxOfPoints([
+            b, new Point(b.x + s.x, b.y), new Point(b.x, b.y + s.y), new Point(b.x + s.x, b.y + s.y)
+        ].map(p => this.m.multiply(p)));
     }
 }
 
-export class TransformNode extends InternalNode {
-    readonly m: Matrix;
+/*export class TransformNode extends InternalNode {
     constructor(m: Matrix, ...nodes: (Node|Element)[]) {
         super();
         this.m = m;
@@ -154,20 +158,29 @@ export class TransformNode extends InternalNode {
             b, new Point(b.x + s.x, b.y), new Point(b.x, b.y + s.y), new Point(b.x + s.x, b.y + s.y)
         ].map(p => this.m.multiply(p)));
     }
-}
+}*/
 
-export class Document extends InternalNode {
+export class Document extends Node {
     readonly attr: object;
+    readonly children: Node[] = [];
     constructor(attr: object) {
         super();
         this.attr = attr;
+    }
+    add(...nodes: (Node|Element)[]) {
+        nodes.forEach(node => {
+            this.children.push(node instanceof Element ? new ObjectNode(node) : node);
+        });
+    }
+    getBBox(attr: DrawOptions): Rectangle {
+        return boundingBox(...this.children.map(c => c.getBBox(attr)));
     }
     getBoundingBox(): Rectangle {
         return this.getBBox({stroke: 'none', 'stroke-width': 1});
     }
     write(writer: NodeWriter) {
         writer.begin(this.attr);
-        super.write(writer);
+        this.children.forEach(c => c.write(writer));
         writer.end();
     }    
 }

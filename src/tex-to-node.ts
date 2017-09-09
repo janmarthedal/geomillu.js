@@ -1,6 +1,6 @@
 import * as mjAPI from 'mathjax-node';
 import {Matrix, Point, Rectangle, Vector, boundingBox} from './geomlib';
-import {Document as giDocument, Node as giNode, TransformNode, AttrNode} from './illunode';
+import {Document as giDocument, Node as giNode, GroupNode} from './illunode';
 import {parseSVG} from './parse-svg';
 
 mjAPI.config({
@@ -14,7 +14,7 @@ function parseEx(str: string): number {
 }
 
 function calcBbox(...nodes: giNode[]) {
-    const n = new AttrNode();
+    const n = new GroupNode();
     n.add(...nodes);
     return n.getBBox({});
 }
@@ -36,7 +36,7 @@ export function TeXToNode(math: string, format: string) {
                 const w = parseEx(svg.attr['width']);
                 //const h = parseEx(doc.attr['height']);
                 const s = w / viewBox.size.x;
-                const n = new TransformNode(new Matrix(s, 0, 0, -s, 0, 0));
+                const n = new GroupNode({}, new Matrix(s, 0, 0, -s, 0, 0));
                 n.add(...svg.children);
                 resolve({
                     node: n,

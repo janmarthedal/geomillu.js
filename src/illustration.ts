@@ -1,5 +1,5 @@
 import {Element as giElement, Point, Matrix, Rectangle, PathElement, Vector, Direction} from './geomlib';
-import {AttrNode, TransformNode, Document} from './illunode';
+import {GroupNode, Document} from './illunode';
 import {TeXToNode} from './tex-to-node';
 import {SVGNodeWriter} from './svg-writer';
 
@@ -23,7 +23,7 @@ export class Illustration {
     static strokeAttrs = ['stroke', 'stroke-width', 'stroke-linejoin', 'stroke-miterlimit'];
     static allAttrs = Illustration.strokeAttrs.concat(['fill']);
     private attrs: object = Illustration.defaultAttrs;
-    private readonly nodes: (AttrNode|TransformNode)[];
+    private readonly nodes: GroupNode[];
 
     constructor() {
         this.nodes = [];
@@ -42,7 +42,7 @@ export class Illustration {
     add(element: giElement) {
         // TODO: What to do about Point?
         const attrPicker = element.hasInner() ? Illustration.allAttrs : Illustration.strokeAttrs;
-        const n = new AttrNode(pick(this.attrs, attrPicker));
+        const n = new GroupNode(pick(this.attrs, attrPicker));
         n.add(element);
         this.nodes.push(n);
     }
@@ -88,9 +88,10 @@ export class Illustration {
                         break;
                 }
                 const ofs = ofsx === 0 && ofsy === 0 ? Vector.zero : new Direction(new Vector(ofsx, ofsy)).scale(offset);
-                this.nodes.push(new TransformNode(
+                this.nodes.push(new GroupNode(
+                    pick(this.attrs, Illustration.allAttrs),
                     new Matrix(fontSize, 0, 0, fontSize, p.x - dx * fontSize + ofs.x, p.y - dy * fontSize + ofs.y),
-                    new AttrNode(pick(this.attrs, Illustration.allAttrs), data.node)
+                    data.node
                 ));
             });
     }
@@ -111,11 +112,11 @@ export class Illustration {
         } else {
             pe.addArc(radius, radius, 0, sinus < 0, true, b.plus(v2));
         }
-        this.nodes.push(new AttrNode({...pick(this.attrs, Illustration.strokeAttrs), fill: 'none'}, pe));
+        this.nodes.push(new GroupNode({...pick(this.attrs, Illustration.strokeAttrs), fill: 'none'}, Matrix.identity, pe));
     }
 
     writeSVG(margin: number) {
-        const transform = new TransformNode(new Matrix(1, 0, 0, -1, 0, 0));
+        const transform = new GroupNode({}, new Matrix(1, 0, 0, -1, 0, 0));
         transform.add(...this.nodes);
         const canvas = new Document({
             viewBox: transform.getBBox(Illustration.defaultAttrs).expand(margin)

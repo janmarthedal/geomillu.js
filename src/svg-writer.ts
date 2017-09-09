@@ -48,24 +48,16 @@ export class SVGNodeWriter extends NodeWriter {
         this.path.pop();
         console.log(this.root.outerHTML);
     }
-    beginAttr(attr: DrawOptions): void {
+    beginGroup(attr: DrawOptions, m: Matrix): void {
         const node = this.doc.createElementNS(SVGNS, 'g');
         Object.keys(attr).forEach(k => {
             node.setAttribute(k, attr[k]);
         });
+        node.setAttribute('transform', matrixToTransform(m));        
         this.path[this.path.length - 1].appendChild(node);
         this.path.push(node);
     }
-    endAttr(): void {
-        this.path.pop();
-    }
-    beginTransform(m: Matrix): void {
-        const node = this.doc.createElementNS(SVGNS, 'g');
-        node.setAttribute('transform', matrixToTransform(m));
-        this.path[this.path.length - 1].appendChild(node);
-        this.path.push(node);
-    }
-    endTransform(): void {
+    endGroup(): void {
         this.path.pop();
     }
     writePath(e: PathElement) {

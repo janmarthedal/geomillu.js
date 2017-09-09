@@ -1,18 +1,18 @@
 import {Point, PathElement, Matrix, Rectangle, Vector} from './geomlib';
-import {AttrNode, TransformNode, Node, Document, DrawOptions} from './illunode';
+import {GroupNode, Node, Document, DrawOptions} from './illunode';
 
 
-function parseTransform(v: string): TransformNode {
+function parseTransform(v: string): GroupNode {
     let match = v.match(/matrix\( *([-.0-9e]+) +([-.0-9e]+) +([-.0-9e]+) +([-.0-9e]+) +([-.0-9e]+) +([-.0-9e]+) *\)/);
     if (match)
-        return new TransformNode(new Matrix(parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3]), parseFloat(match[4]), parseFloat(match[5]), parseFloat(match[6])));
+        return new GroupNode({}, new Matrix(parseFloat(match[1]), parseFloat(match[2]), parseFloat(match[3]), parseFloat(match[4]), parseFloat(match[5]), parseFloat(match[6])));
     match = v.match(/translate\( *([-.0-9e]+),([-.0-9e]+) *\)/);
     if (match)
-        return new TransformNode(new Matrix(1, 0, 0, 1, parseFloat(match[1]), parseFloat(match[2])));
+        return new GroupNode({}, new Matrix(1, 0, 0, 1, parseFloat(match[1]), parseFloat(match[2])));
     match = v.match(/scale\( *([-.0-9e]+) *\)/);
     if (match) {
         const s = parseFloat(match[1]);
-        return new TransformNode(new Matrix(s, 0, 0, s, 0, 0));
+        return new GroupNode({}, new Matrix(s, 0, 0, s, 0, 0));
     }
     throw new Error(`Unsupported transform attribute "${v}"`);
 }
@@ -57,14 +57,14 @@ function parseSVGPath(d: string): PathElement {
     return node;
 }
 
-function addChildTo(node: Document|AttrNode|TransformNode, child: AttrNode|TransformNode) {
+function addChildTo(node: Document|GroupNode, child: GroupNode) {
     node.add(child);
     return child;
 }
 
-export function parseSVG(node: Element): Document|AttrNode|TransformNode {
-    let outNode: Document|AttrNode|TransformNode;
-    let subNode: Document|AttrNode|TransformNode;
+export function parseSVG(node: Element): Document|GroupNode {
+    let outNode: Document|GroupNode;
+    let subNode: Document|GroupNode;
     if (node.tagName.toLowerCase() === 'svg') {
         const attr = {};
         Array.from(node.attributes).forEach(a => {
@@ -73,7 +73,7 @@ export function parseSVG(node: Element): Document|AttrNode|TransformNode {
         outNode = subNode = new Document(attr);
     } else {
         const attr: DrawOptions = {};
-        outNode = subNode = new AttrNode();
+        outNode = subNode = new GroupNode();
         if (node.hasAttribute('transform')) {
             subNode = addChildTo(subNode, parseTransform(node.getAttribute('transform')));
         }
@@ -82,7 +82,7 @@ export function parseSVG(node: Element): Document|AttrNode|TransformNode {
                 attr[key] = node.getAttribute(key);
         });
         if (Object.keys(attr).length !== 0) {
-            subNode = addChildTo(subNode, new AttrNode(attr));
+            subNode = addChildTo(subNode, new GroupNode(attr));
         }
         switch (node.tagName.toLowerCase()) {
             case 'g':
@@ -100,7 +100,7 @@ export function parseSVG(node: Element): Document|AttrNode|TransformNode {
             default:
                 throw new Error('Unsupported node ' + node.tagName);
         }
-        outNode = <Document|AttrNode|TransformNode> outNode.children[0];
+        outNode = outNode.children[0] as Document|GroupNode;
     }
     let c = node.firstElementChild;
     while (c !== null) {

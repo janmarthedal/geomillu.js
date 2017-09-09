@@ -37,6 +37,7 @@ export class Matrix {
     readonly d: number;
     readonly e: number;
     readonly f: number;
+    static identity = new Matrix(1, 0, 0, 1, 0, 0);
     constructor(a: number, b: number, c: number, d: number, e: number, f: number) {
         this.a = a;  this.b = b;  this.c = c;  this.d = d;  this.e = e;  this.f = f;
     }
