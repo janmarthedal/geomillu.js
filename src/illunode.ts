@@ -61,6 +61,9 @@ export abstract class Node {
     //outline: Polygon;
     abstract write(writer: NodeWriter): void;
     abstract getBBox(attr: DrawOptions): Rectangle;
+    simplify(): Node {
+        return this;
+    }
 }
 
 class ObjectNode extends Node {
@@ -90,24 +93,6 @@ class ObjectNode extends Node {
     }
 }
 
-/*class InternalNode extends Node {
-    constructor() {
-        super();
-        this.children = [];
-    }
-    add(...nodes: (Node|Element)[]) {
-        nodes.forEach(node => {
-            this.children.push(node instanceof Element ? new ObjectNode(node) : node);
-        });
-    }
-    write(writer: NodeWriter): void {
-        this.children.forEach(c => c.write(writer));
-    }
-    getBBox(attr: DrawOptions): Rectangle {
-        return boundingBox(...this.children.map(c => c.getBBox(attr)));
-    }
-}*/
-
 export class GroupNode extends Node {
     readonly attr: DrawOptions;
     readonly m: Matrix;
@@ -135,30 +120,23 @@ export class GroupNode extends Node {
         const s = bbox.size;
         return boundingBoxOfPoints([
             b, new Point(b.x + s.x, b.y), new Point(b.x, b.y + s.y), new Point(b.x + s.x, b.y + s.y)
-        ].map(p => this.m.multiply(p)));
+        ].map(p => this.m.multiply_point(p)));
+    }
+    simplify() {
+        const new_children = this.children.map(c => c.simplify());
+        if (new_children.length === 1) {
+            const child = new_children[0];
+            if (child instanceof GroupNode) {
+                return new GroupNode(
+                    {...this.attr, ...child.attr},
+                    this.m.multiply_matrix(child.m),
+                    ...child.children.map(c => c.simplify())
+                );
+            }
+        }
+        return new GroupNode(this.attr, this.m, ...new_children);
     }
 }
-
-/*export class TransformNode extends InternalNode {
-    constructor(m: Matrix, ...nodes: (Node|Element)[]) {
-        super();
-        this.m = m;
-        this.add(...nodes);
-    }
-    write(writer: NodeWriter): void {
-        writer.beginTransform(this.m);
-        super.write(writer);
-        writer.endTransform();
-    }    
-    getBBox(attr: DrawOptions): Rectangle {
-        const bbox = super.getBBox(attr);
-        const b = bbox.base;
-        const s = bbox.size;
-        return boundingBoxOfPoints([
-            b, new Point(b.x + s.x, b.y), new Point(b.x, b.y + s.y), new Point(b.x + s.x, b.y + s.y)
-        ].map(p => this.m.multiply(p)));
-    }
-}*/
 
 export class Document extends Node {
     readonly attr: object;

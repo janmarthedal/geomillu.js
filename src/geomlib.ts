@@ -41,8 +41,18 @@ export class Matrix {
     constructor(a: number, b: number, c: number, d: number, e: number, f: number) {
         this.a = a;  this.b = b;  this.c = c;  this.d = d;  this.e = e;  this.f = f;
     }
-    multiply(p: Point): Point {
+    multiply_point(p: Point): Point {
         return new Point(this.a * p.x + this.c * p.y + this.e, this.b * p.x + this.d * p.y + this.f);
+    }
+    multiply_matrix(p: Matrix): Matrix {
+        return new Matrix(
+            this.a * p.a + this.c * p.b,
+            this.b * p.a + this.d * p.b,
+            this.a * p.c + this.c * p.d,
+            this.b * p.c + this.d * p.d,
+            this.a * p.e + this.c * p.f + this.e,
+            this.b * p.e + this.d * p.f + this.f
+        );
     }
 }
 

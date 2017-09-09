@@ -116,12 +116,12 @@ export class Illustration {
     }
 
     writeSVG(margin: number) {
-        const transform = new GroupNode({}, new Matrix(1, 0, 0, -1, 0, 0));
-        transform.add(...this.nodes);
+        const transform = new GroupNode({}, new Matrix(1, 0, 0, -1, 0, 0),
+                                        ...this.nodes);
         const canvas = new Document({
             viewBox: transform.getBBox(Illustration.defaultAttrs).expand(margin)
         });
-        canvas.add(transform);
+        canvas.add(transform.simplify());
         canvas.write(new SVGNodeWriter());
     }
 }
