@@ -5,8 +5,11 @@ import {NodeWriter, DrawOptions} from './illunode';
 const SVGNS = "http://www.w3.org/2000/svg";
 
 function matrixToTransform(m: Matrix): string {
-    if (m.a === 1 && m.b === 0 && m.c === 0 && m.d === 1)
+    if (m.a === 1 && m.b === 0 && m.c === 0 && m.d === 1) {
+        if (m.e === 0 && m.f === 0)
+            return null;
         return `translate(${m.e},${m.f})`;
+    }
     if (m.b === 0 && m.c === 0 && m.e === 0 && m.f === 0)
         return m.a === m.d ? `scale(${m.a})` : `scale(${m.a},${m.d})`;
     return `matrix(${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f})`;
@@ -53,7 +56,9 @@ export class SVGNodeWriter extends NodeWriter {
         Object.keys(attr).forEach(k => {
             node.setAttribute(k, attr[k]);
         });
-        node.setAttribute('transform', matrixToTransform(m));        
+        const transform = matrixToTransform(m);
+        if (transform)
+            node.setAttribute('transform', transform);
         this.path[this.path.length - 1].appendChild(node);
         this.path.push(node);
     }
